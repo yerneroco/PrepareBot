@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
 import os
 
 class MainInterface:
@@ -50,8 +50,14 @@ class MainInterface:
         btn_frame.pack(fill="x", padx=10, pady=5)
         
         tk.Button(btn_frame, text="Edit Task", command=self.main_app.task_actions.edit_task).pack(side="left", padx=5)
+        tk.Button(btn_frame, text="Select Task", command=self.main_app.task_actions.toggle_selection).pack(side="left", padx=5)
         tk.Button(btn_frame, text="Show Incomplete", command=self.main_app.task_actions.show_incomplete).pack(side="left", padx=5)
         tk.Button(btn_frame, text="Save", command=self.main_app.task_actions.save_progress).pack(side="left", padx=5)
+        
+        # Export dropdown menu
+        self.export_btn = tk.Button(btn_frame, text="Export", command=self.show_export_menu)
+        self.export_btn.pack(side="left", padx=5)
+        
         self.autosave_btn = tk.Button(btn_frame, text="Enable Autosave", command=self.main_app.task_actions.toggle_autosave)
         self.autosave_btn.pack(side="left", padx=5)
         
@@ -90,16 +96,23 @@ class MainInterface:
                     notes_preview = info.get('notes', '')[:30] + "..." if len(info.get('notes', '')) > 30 else info.get('notes', '')
                     suggested_tasks_preview = info.get('suggested_tasks', '')[:50] + "..." if len(info.get('suggested_tasks', '')) > 50 else info.get('suggested_tasks', '')
                     
+                    # Check if this task is selected for export
+                    tags = ()
+                    if date in self.main_app.task_actions.selected_tasks:
+                        tags = ("selected",)
+                    
                     self.main_app.tree.insert("", "end", iid=date, values=(
                         date, 
                         info['topic'],
                         suggested_tasks_preview,
                         status,
                         notes_preview
-                    ))
+                    ), tags=tags)
         
         # Configure header row styling
         self.main_app.tree.tag_configure("header", background="lightblue", font=("Arial", 10, "bold"))
+        # Configure selected task styling
+        self.main_app.tree.tag_configure("selected", background="lightgreen", font=("Arial", 9, "bold"))
     
     def update_autosave_button(self, enabled):
         """Update autosave button text based on state"""
@@ -107,4 +120,18 @@ class MainInterface:
             if enabled:
                 self.autosave_btn.config(text="Disable Autosave", bg="red", fg="white")
             else:
-                self.autosave_btn.config(text="Enable Autosave", bg="SystemButtonFace", fg="black") 
+                self.autosave_btn.config(text="Enable Autosave", bg="SystemButtonFace", fg="black")
+    
+    def show_export_menu(self):
+        """Show export options menu"""
+        menu = tk.Menu(self.main_app, tearoff=0)
+        menu.add_command(label="Export Selected to Clipboard", command=self.main_app.task_actions.export_selected_to_clipboard)
+        menu.add_command(label="Export Selected to File", command=self.main_app.task_actions.export_selected_to_file)
+        menu.add_separator()
+        menu.add_command(label="Export All to Clipboard", command=self.main_app.task_actions.export_all_to_clipboard)
+        menu.add_command(label="Export All to File", command=self.main_app.task_actions.export_all_to_file)
+        
+        # Show menu at button position
+        x = self.export_btn.winfo_rootx()
+        y = self.export_btn.winfo_rooty() + self.export_btn.winfo_height()
+        menu.post(x, y) 
