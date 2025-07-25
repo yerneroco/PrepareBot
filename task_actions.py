@@ -22,6 +22,17 @@ class TaskActions:
         
         # Get the date from the selected item (it's the iid)
         date = selected[0]
+        
+        # Check if this is a header row (should not be editable)
+        if date.startswith("header_"):
+            messagebox.showwarning("Warning", "Cannot edit category headers.")
+            return
+        
+        # Check if the date exists in sessions
+        if date not in self.main_app.sessions:
+            messagebox.showwarning("Warning", "Selected item is not a valid task.")
+            return
+        
         task_info = self.main_app.sessions[date].copy()
         task_info['date'] = date
         
@@ -52,7 +63,7 @@ class TaskActions:
         if not incomplete:
             messagebox.showinfo("Complete", "All past and current sessions completed! 🎉")
         else:
-            incomplete_text = "\n".join([f"{day}: {self.main_app.sessions[day]['topic']}" for day in incomplete])
+            incomplete_text = "\n".join([f"{day}: {self.main_app.sessions[day]['topic']} - {self.main_app.sessions[day].get('suggested_tasks', '')[:50]}..." for day in incomplete])
             messagebox.showinfo("Incomplete Sessions", f"Remaining tasks (today and past):\n\n{incomplete_text}")
     
     def save_progress(self):

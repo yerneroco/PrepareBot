@@ -22,7 +22,18 @@ class TaskNotesDialog(tk.Toplevel):
         
         # Task info
         tk.Label(main_frame, text=f"Date: {self.task_info['date']}", font=("Arial", 12, "bold")).pack(anchor="w")
-        tk.Label(main_frame, text=f"Topic: {self.task_info['topic']}", font=("Arial", 10)).pack(anchor="w", pady=(0, 10))
+        tk.Label(main_frame, text=f"Topic: {self.task_info['topic']}", font=("Arial", 10)).pack(anchor="w", pady=(0, 5))
+        
+        # Show suggested tasks if available
+        if self.task_info.get('suggested_tasks'):
+            suggested_frame = tk.Frame(main_frame)
+            suggested_frame.pack(fill="x", pady=(0, 10))
+            
+            tk.Label(suggested_frame, text="Suggested Tasks:", font=("Arial", 10, "bold")).pack(anchor="w")
+            suggested_text = tk.Text(suggested_frame, height=3, width=50, wrap="word")
+            suggested_text.pack(fill="x", pady=(2, 0))
+            suggested_text.insert("1.0", self.task_info['suggested_tasks'])
+            suggested_text.config(state="disabled")  # Make it read-only
         
         # Notes section
         tk.Label(main_frame, text="What was done:").pack(anchor="w")

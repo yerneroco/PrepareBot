@@ -21,17 +21,17 @@ class MainInterface:
         tree_frame = tk.Frame(self.main_app)
         tree_frame.pack(fill="both", expand=True, padx=10, pady=5)
         
-        self.main_app.tree = ttk.Treeview(tree_frame, columns=("Category", "Date", "Topic", "Status", "Notes"), show="headings")
-        self.main_app.tree.heading("Category", text="Category")
+        self.main_app.tree = ttk.Treeview(tree_frame, columns=("Date", "Topic", "Suggested Tasks", "Status", "Notes"), show="headings")
         self.main_app.tree.heading("Date", text="Date")
         self.main_app.tree.heading("Topic", text="Focus Topic")
+        self.main_app.tree.heading("Suggested Tasks", text="Suggested Tasks")
         self.main_app.tree.heading("Status", text="Status")
         self.main_app.tree.heading("Notes", text="Notes")
         
         # Configure column widths
-        self.main_app.tree.column("Category", width=120)
         self.main_app.tree.column("Date", width=100)
-        self.main_app.tree.column("Topic", width=250)
+        self.main_app.tree.column("Topic", width=200)
+        self.main_app.tree.column("Suggested Tasks", width=300)
         self.main_app.tree.column("Status", width=100)
         self.main_app.tree.column("Notes", width=200)
         
@@ -59,7 +59,7 @@ class MainInterface:
         self.main_app.tree.bind("<Double-1>", lambda e: self.main_app.task_actions.edit_task())
     
     def populate_tree(self):
-        """Populate the treeview with categorized session data"""
+        """Populate the treeview with categorized session data using header rows"""
         # Clear existing items
         for item in self.main_app.tree.get_children():
             self.main_app.tree.delete(item)
@@ -68,23 +68,38 @@ class MainInterface:
         from csv_loader import CSVLoader
         categories = CSVLoader.categorize_dates(self.main_app.sessions)
         
-        # Add sessions by category
+        # Add sessions by category with header rows
         for category_name, category_items in categories.items():
             if category_items:  # Only show categories with items
                 # Sort items within each category by date
                 category_items.sort(key=lambda x: x[0])
                 
+                # Add category header row
+                header_id = f"header_{category_name}"
+                self.main_app.tree.insert("", "end", iid=header_id, values=(
+                    f"--- {category_name} ---",
+                    "",
+                    "",
+                    "",
+                    ""
+                ), tags=("header",))
+                
+                # Add tasks for this category
                 for date, info in category_items:
                     status = "✓ Complete" if info['completed'] else "⏳ Pending"
                     notes_preview = info.get('notes', '')[:30] + "..." if len(info.get('notes', '')) > 30 else info.get('notes', '')
+                    suggested_tasks_preview = info.get('suggested_tasks', '')[:50] + "..." if len(info.get('suggested_tasks', '')) > 50 else info.get('suggested_tasks', '')
                     
                     self.main_app.tree.insert("", "end", iid=date, values=(
-                        category_name,
                         date, 
-                        info['topic'], 
+                        info['topic'],
+                        suggested_tasks_preview,
                         status,
                         notes_preview
                     ))
+        
+        # Configure header row styling
+        self.main_app.tree.tag_configure("header", background="lightblue", font=("Arial", 10, "bold"))
     
     def update_autosave_button(self, enabled):
         """Update autosave button text based on state"""
