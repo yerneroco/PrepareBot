@@ -21,15 +21,17 @@ class MainInterface:
         tree_frame = tk.Frame(self.main_app)
         tree_frame.pack(fill="both", expand=True, padx=10, pady=5)
         
-        self.main_app.tree = ttk.Treeview(tree_frame, columns=("Date", "Topic", "Status", "Notes"), show="headings")
+        self.main_app.tree = ttk.Treeview(tree_frame, columns=("Category", "Date", "Topic", "Status", "Notes"), show="headings")
+        self.main_app.tree.heading("Category", text="Category")
         self.main_app.tree.heading("Date", text="Date")
         self.main_app.tree.heading("Topic", text="Focus Topic")
         self.main_app.tree.heading("Status", text="Status")
         self.main_app.tree.heading("Notes", text="Notes")
         
         # Configure column widths
-        self.main_app.tree.column("Date", width=120)
-        self.main_app.tree.column("Topic", width=300)
+        self.main_app.tree.column("Category", width=120)
+        self.main_app.tree.column("Date", width=100)
+        self.main_app.tree.column("Topic", width=250)
         self.main_app.tree.column("Status", width=100)
         self.main_app.tree.column("Notes", width=200)
         
@@ -49,25 +51,45 @@ class MainInterface:
         
         tk.Button(btn_frame, text="Edit Task", command=self.main_app.task_actions.edit_task).pack(side="left", padx=5)
         tk.Button(btn_frame, text="Show Incomplete", command=self.main_app.task_actions.show_incomplete).pack(side="left", padx=5)
-        tk.Button(btn_frame, text="Export Progress", command=self.main_app.task_actions.export_progress).pack(side="left", padx=5)
+        tk.Button(btn_frame, text="Save", command=self.main_app.task_actions.save_progress).pack(side="left", padx=5)
+        self.autosave_btn = tk.Button(btn_frame, text="Enable Autosave", command=self.main_app.task_actions.toggle_autosave)
+        self.autosave_btn.pack(side="left", padx=5)
         
         # Bind double-click
         self.main_app.tree.bind("<Double-1>", lambda e: self.main_app.task_actions.edit_task())
     
     def populate_tree(self):
-        """Populate the treeview with session data"""
+        """Populate the treeview with categorized session data"""
         # Clear existing items
         for item in self.main_app.tree.get_children():
             self.main_app.tree.delete(item)
         
-        # Add sessions
-        for date, info in self.main_app.sessions.items():
-            status = "✓ Complete" if info['completed'] else "⏳ Pending"
-            notes_preview = info.get('notes', '')[:30] + "..." if len(info.get('notes', '')) > 30 else info.get('notes', '')
-            
-            self.main_app.tree.insert("", "end", iid=date, values=(
-                date, 
-                info['topic'], 
-                status,
-                notes_preview
-            )) 
+        # Get categorized sessions
+        from csv_loader import CSVLoader
+        categories = CSVLoader.categorize_dates(self.main_app.sessions)
+        
+        # Add sessions by category
+        for category_name, category_items in categories.items():
+            if category_items:  # Only show categories with items
+                # Sort items within each category by date
+                category_items.sort(key=lambda x: x[0])
+                
+                for date, info in category_items:
+                    status = "✓ Complete" if info['completed'] else "⏳ Pending"
+                    notes_preview = info.get('notes', '')[:30] + "..." if len(info.get('notes', '')) > 30 else info.get('notes', '')
+                    
+                    self.main_app.tree.insert("", "end", iid=date, values=(
+                        category_name,
+                        date, 
+                        info['topic'], 
+                        status,
+                        notes_preview
+                    ))
+    
+    def update_autosave_button(self, enabled):
+        """Update autosave button text based on state"""
+        if hasattr(self, 'autosave_btn'):
+            if enabled:
+                self.autosave_btn.config(text="Disable Autosave", bg="red", fg="white")
+            else:
+                self.autosave_btn.config(text="Enable Autosave", bg="SystemButtonFace", fg="black") 
